@@ -1,0 +1,130 @@
+{% extends "webapp/header.html" %}
+
+{% block content %}
+
+	
+	<script>
+	var quoteItems = [];
+	var quoteJSON = {};
+	
+	function updateQuoteDiv(){
+		var quoteJSON = JSON.stringify({"name" : document.getElementById("quoteNameID").value,
+		"price" : parseInt(document.getElementById("quotePriceID").value),
+		"items" : quoteItems}, undefined, "\t");
+		//var textedJson = JSON.stringify(quoteJSON, undefined, "\t");
+		$('#JSONdiv').text(quoteJSON);
+		
+	}
+	
+	function onAddItemClicked(){
+		addItem();
+		updateQuoteDiv();
+	}
+	
+	function addItem(){
+	
+	let JSONcandidate = {"name" : document.getElementById("candidate").value, "id" : quoteItems.length};
+	quoteItems.push(JSONcandidate);
+	}
+	
+	function onRemoveItemClicked(){
+		findAndRemove(quoteItems,'name',document.getElementById("candidate").value);
+		updateQuoteDiv();
+	}
+	
+	function findAndRemove(array, property, value) {
+	  array.forEach(function(result, index) {
+		if(result[property] === value) {
+		  //Remove from array
+		  array.splice(index, 1);
+		}    
+	  });
+	  return array;
+	}
+	
+	function getToken(usernameInputID,passwordInputID){
+		//send a POST request to localhost/api-token-auth/ with username and password to get back a token
+		JSONbody = {'username':document.getElementById(usernameInputID).value, 'password': document.getElementById(passwordInputID).value}
+		
+		$.ajax({
+        url: 'http://localhost:8000/api-token-auth/',
+        type: 'POST',
+        dataType: 'json',
+        /* data: JSON.stringify(body), /* wrong */
+        data: JSONbody, /* right */
+		headers:{
+		"X-CSRFToken": "{{ csrf_token }}"},
+        success: function(result) {
+            //called when successful
+            document.getElementById('tokenSpan').innerHTML = result['token'];
+        },
+
+        error: function(result) {
+            //called when there is an error
+			document.getElementById('tokenSpan').innerHTML = 'Error, wrong credentials';
+        },
+    });
+	}
+	
+	</script>
+
+<div class="container-fluid">
+<div class="container shadow-lg p-3 mb-5 bg-white rounded">
+{% if user.is_authenticated %}
+  <div class="row">
+    <div class="col-sm">
+      <h3>Quote (JSON)</h3>
+	    <div id="JSONdiv" style="overflow-wrap: anywhere;white-space: pre;">
+	    </div>
+    </div>
+    <div class="col-sm">
+
+		<h3>Quotes JSON Builder</h3>
+		  <div class="form-group">
+			<br />
+			<input type="text" class="form-control" id="quoteNameID" aria-describedby="nameHelp" 
+			placeholder="Enter quote name" oninput="updateQuoteDiv()">
+			<small id="nameHelp" class="form-text text-muted">Note: quote names are unique.</small><br />
+			
+			<input type="number" class="form-control" id="quotePriceID" aria-describedby="nameHelp" 
+			placeholder="Enter quote price" oninput="updateQuoteDiv()">
+			<small id="priceHelp" class="form-text text-muted">Note: price cannot be beneath 0.</small>
+		  </div>
+		  <div class="form-group">
+		  		  <input type="text" class="form-control" id="candidate" 
+		  placeholder="Item name"><br />
+		  <button type="button" class="btn btn-primary" onclick="onAddItemClicked()">Add item</button>
+		  <button type="button" class="btn btn-secondary" onclick="onRemoveItemClicked()">Remove item</button>
+		  </div>
+		  <button type="clear" class="btn btn-primary">Clear</button>
+	</div>
+{% endif %}
+    <div class="col-sm">
+      Welcome to the Quotes JSON Builder!<br />
+	  This is a helper tool for building JSON Quotes<br /><br />
+	  {% if not user.is_authenticated %} Please register/log in to use the service.<br /><br />{% endif %}
+	  
+	  To use the REST API first you need to get a token with your registered account by posting with username and password parameters to <br />" http://localhost:8000/api-token-auth/"<br /><br />
+	  Or by filling the form down below.<br /><br />
+	  Then make your requests in<br />http://localhost:8000/api/webapp/HERE!
+	  
+	  <br /><br />
+	  <h4> Aquire token </h4>
+	  <div class="form-group">
+			<br />
+			<input type="text" class="form-control" id="usernameInputID" placeholder="Username"><br />
+			<input type="password" class="form-control" id="passwordInputID" placeholder="Password"><br />
+			
+			<button type="submit" class="btn btn-primary" onclick="getToken('usernameInputID','passwordInputID')">Request token</button>
+			<br />
+			<span id="tokenSpan"></span>
+	  </div>
+		  
+	</div>
+</div>
+</div>
+</div>
+
+</div>
+<script>updateQuoteDiv();</script>
+{% endblock %}
